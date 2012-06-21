@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+
+/*jslint node: true */
+'use strict';
+
+var resolve = require('volo/lib/archive').resolve,
+    search = require('volo/lib/search/github'),
+    command = process.argv[2],
+    asRaw = process.argv[3],
+    query = process.argv[4],
+    prettyjson;
+
+//Adjust args if no -j flag
+if (asRaw !== '-j') {
+    query = asRaw;
+    asRaw = false;
+} else {
+    asRaw = true;
+}
+
+//prettyjson is optional
+if (!asRaw) {
+    try {
+        prettyjson = require('prettyjson');
+    } catch (e) {
+    }
+}
+
+function output(obj) {
+    var out = prettyjson ?
+                prettyjson.render(obj) :
+                JSON.stringify(obj, null, '  ');
+
+    console.log(out);
+}
+
+function logError(err) {
+    console.log('ERROR: ' + err);
+}
+
+if (command === 'search') {
+    query = query.split('#');
+    if (query.length > 1) {
+        console.log('search is only for resolving a repo name to a ' +
+                    'owner/repo value. Stripping off the fragment ID "' +
+                    query[1] + '"...');
+    }
+    query = query[0];
+
+    console.log('searching github for "' + query + '"...');
+    search(query).then(output, logError);
+} else if (command === 'resolve') {
+    console.log('resolving "' + query + '"...');
+    resolve(query).then(output, logError);
+} else {
+    console.log('Unknown command: ' + command);
+}
+
